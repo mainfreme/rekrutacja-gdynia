@@ -10,16 +10,12 @@ return new class extends Migration
     {
         Schema::create('imports', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('type', 16);
-            $table->string('disk')->default('local');
-            $table->string('path');
-            $table->string('status')->default('pending');
-            $table->unsignedInteger('rows_processed')->default(0);
-            $table->unsignedInteger('rows_success')->default(0);
-            $table->unsignedInteger('rows_failed')->default(0);
-            $table->text('failure_message')->nullable();
-            $table->timestamps();
+            $table->string('file_name');
+            $table->integer('total_records');
+            $table->integer('successful_records');
+            $table->integer('failed_records');
+            $table->string('status');
+            $table->dateTime('created_at');
         });
     }
 
