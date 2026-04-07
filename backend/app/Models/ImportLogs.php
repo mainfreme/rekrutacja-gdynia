@@ -11,16 +11,15 @@ final class ImportLogs extends Model
 {
     protected $fillable = [
         'import_id',
-        'line_number',
-        'raw_payload',
-        'errors',
+        'transaction_id',
+        'error_message',
+        'created_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'line_number' => 'integer',
-            'errors' => 'array',
+            'created_at' => 'datetime',
         ];
     }
 
