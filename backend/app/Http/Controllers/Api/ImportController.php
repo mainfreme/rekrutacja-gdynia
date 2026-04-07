@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ImportController extends Controller
+class ImportController extends ApiController
 {
     /**
      * Get the list of imports
@@ -15,7 +15,10 @@ class ImportController extends Controller
      */
     public function list(Request $request)
     {
-        return response()->json(['message' => 'Import uploaded successfully']);
+        $importDto = [];
+        return $this->successResponse([
+            'imports' => $importDto,
+        ]);
     }
 
     /**
@@ -25,8 +28,11 @@ class ImportController extends Controller
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function details(Request $request, $id)
+    public function details(string $id): JsonResponse
     {
-        return response()->json(['message' => 'Import details']);
+        $importDto = [];
+        return $this->successResponse([
+            'imports' => $importDto,
+        ]);
     }
 }
