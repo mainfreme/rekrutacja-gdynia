@@ -1,5 +1,5 @@
-# PHP 8.3 FPM — rozszerzenia typowe dla Laravel 12 + kolejki RabbitMQ (amqp)
-FROM php:8.3-fpm-bookworm
+# PHP 8.4 FPM — rozszerzenia typowe dla Laravel 12 + kolejki RabbitMQ (amqp)
+FROM php:8.4-fpm-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git unzip libzip-dev libpng-dev libicu-dev libxml2-dev libonig-dev \
