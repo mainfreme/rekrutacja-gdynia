@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
 
+import FileUpload from '@/components/FileUpload.vue'
+
 const app = useAppStore()
+
 </script>
 
 <template>
@@ -22,9 +25,11 @@ const app = useAppStore()
       <h2 class="text-lg font-medium text-slate-900 dark:text-white">
         Import tranzakcji bankowych
       </h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400">
         
+      <p class="text-sm text-slate-500 dark:text-slate-400">
+        Prześlij plik CSV, JSON lub XML z transakcjami bankowymi.
       </p>
+      <FileUpload />
     </section>
   </main>
 </template>
