@@ -69,6 +69,10 @@ async function handleUpload() {
   try {
     const response = await fetch(importsUploadUrl, {
       method: 'POST',
+      headers: {
+        Accept:
+          'application/json, application/xml, text/xml, text/csv',
+      },
       body: formData,
     })
 

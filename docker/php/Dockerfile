@@ -5,12 +5,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git unzip libzip-dev libpng-dev libicu-dev libxml2-dev libonig-dev \
     librabbitmq-dev pkg-config $PHPIZE_DEPS \
     && docker-php-ext-configure intl \
-    && docker-php-ext-install -j$(nproc) pdo_mysql mbstring exif pcntl bcmath gd intl zip opcache \
+    && docker-php-ext-install -j$(nproc) sockets pdo_mysql mbstring exif pcntl bcmath gd intl zip opcache \
     && pecl install amqp \
     && docker-php-ext-enable amqp \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 WORKDIR /var/www/html
 
