@@ -85,22 +85,30 @@ docker compose exec app php artisan queue:work
 
 **Bez Dockera:** w katalogu `backend` uruchom `php artisan queue:work` w osobnym terminalu (z tym samym `QUEUE_CONNECTION` i dostępem do bazy co aplikacja).
 
-### 8. Generowanie pliku testowego JSON (import)
+### 8. Generowanie plików testowych do importu (JSON / XML / CSV)
 
-Artisan generuje tablicę obiektów z polami zgodnymi z importem (`transaction_id`, `account_number`, `transaction_date`, `amount`, `currency`). Numery kont są losowymi polskimi IBAN z poprawnym checksum, żeby przechodziły walidację w aplikacji.
+Artisan udostępnia trzy komendy z tymi samymi losowymi danymi: pola `transaction_id`, `account_number`, `transaction_date`, `amount`, `currency`. Numery kont to losowe polskie IBAN z poprawnym checksum (zgodne z walidacją w aplikacji). Opcja **`--limit`** ustawia liczbę rekordów (domyślnie `10000`).
 
-**Docker — plik poza kontenerem (na hoście):** w `docker-compose.yml` katalog `./exports` z **rootu repozytorium** jest zamontowany jako `/var/www/html/exports` w serwisie `app`. Domyślna ścieżka komendy to `exports/import.json` wewnątrz aplikacji, więc na komputerze-hostcie plik pojawia się jako:
+| Format | Komenda | Domyślny plik wyjściowy |
+|--------|---------|-------------------------|
+| JSON (tablica obiektów) | `import:generate-json-file` | `exports/import.json` |
+| XML (`<transactions>` → `<transaction>` …) | `import:generate-xml-file` | `exports/import.xml` |
+| CSV (nagłówek + wiersze) | `import:generate-csv-file` | `exports/import.csv` |
 
-**`exports/import.json`** (obok folderów `backend/`, `frontend/`, obok `docker-compose.yml`) — możesz go otworzyć w Finderze / IDE albo wgrać do importu bez `docker cp`.
+**Docker — plik poza kontenerem (na hoście):** w `docker-compose.yml` katalog `./exports` z **rootu repozytorium** jest zamontowany jako `/var/www/html/exports` w serwisie `app`. Domyślne ścieżki komend to `exports/import.*` wewnątrz aplikacji, więc na hoście pliki trafiają do **`exports/`** obok `backend/`, `frontend/` i `docker-compose.yml` — bez `docker cp`.
 
-W kontenerze to ten sam plik: `/var/www/html/exports/import.json`.
+W kontenerze to np. `/var/www/html/exports/import.json` (analogicznie `.xml` / `.csv`).
 
 ```bash
 # z hosta, z katalogu głównego repozytorium:
 docker compose exec app php artisan import:generate-json-file
+docker compose exec app php artisan import:generate-xml-file
+docker compose exec app php artisan import:generate-csv-file
 
 # mniejszy plik (szybszy test):
 docker compose exec app php artisan import:generate-json-file --limit=5000
+docker compose exec app php artisan import:generate-xml-file --limit=5000
+docker compose exec app php artisan import:generate-csv-file --limit=5000
 ```
 
 Po **pierwszej** zmianie `docker-compose.yml` z nowym volume zrób restart kontenera `app` (np. `docker compose up -d`).
@@ -109,13 +117,17 @@ Po **pierwszej** zmianie `docker-compose.yml` z nowym volume zrób restart konte
 
 ```bash
 docker compose exec app php artisan import:generate-json-file exports/moj-plik.json
+docker compose exec app php artisan import:generate-xml-file exports/moj-plik.xml
+docker compose exec app php artisan import:generate-csv-file exports/moj-plik.csv
 ```
 
-Bez Dockera (uruchamiasz `artisan` z katalogu `backend/`) domyślnie powstaje **`backend/exports/import.json`** (podkatalog projektu Laravel).
+Bez Dockera (uruchamiasz `artisan` z katalogu `backend/`) domyślnie powstają pliki w **`backend/exports/`** (`import.json`, `import.xml`, `import.csv`).
 
 ```bash
 cd backend
 php artisan import:generate-json-file
+php artisan import:generate-xml-file
+php artisan import:generate-csv-file
 php artisan import:generate-json-file --limit=1000
 ```
 
