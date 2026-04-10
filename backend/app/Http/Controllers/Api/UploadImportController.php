@@ -32,7 +32,8 @@ class UploadImportController extends ApiController
             return $this->successResponse([
                 'message' => 'Import uploaded successfully',
                 'import' => ImportResource::make($import),
-            ]);
+            ], '', Response::HTTP_ACCEPTED);
+            
         } catch (Throwable $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
