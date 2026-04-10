@@ -5,7 +5,7 @@ import { useRoute } from 'vue-router'
 const apiBase =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8080'
 
-/** Liczba wierszy na stronę w zakładkach Transakcje i Logi (paginacja po stronie klienta). */
+/** Zgodne z domyślną wartością w `ImportListService::details`. */
 const ITEMS_PER_PAGE = 30
 
 interface ImportSummary {
@@ -18,38 +18,57 @@ interface ImportSummary {
   created_at: string
 }
 
+interface PaginationSlice {
+  current_page: number
+  per_page: number
+  total: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface TransactionRow {
+  id?: number
+  import_id?: number | null
   transaction_id: string
   account_number: string
   transaction_date: string | null
-  amount: string
+  amount: string | number
   currency: string
 }
 
 interface ImportLogRow {
+  id?: number
+  import_id?: number
   transaction_id: string
   error_message: string | null
   created_at: string | null
 }
 
-/** Odpowiedź GET /api/imports/{id} — jeden request, pełne dane. */
+/** Odpowiedź GET /api/imports/{id} — `ImportListService::details`. */
 interface ImportDetailApiBody {
   success: boolean
   message: string
   data: {
     import: ImportSummary
     transactions: TransactionRow[]
-    import_logs: ImportLogRow[]
+    transactions_pagination: PaginationSlice
+    logs: ImportLogRow[]
+    logs_pagination: PaginationSlice
   }
 }
 
 const route = useRoute()
 
 const loading = ref(false)
+const loadingLists = ref(false)
 const error = ref('')
 const importSummary = ref<ImportSummary | null>(null)
 const transactions = ref<TransactionRow[]>([])
 const importLogs = ref<ImportLogRow[]>([])
+
+const transactionsPagination = ref<PaginationSlice | null>(null)
+const logsPagination = ref<PaginationSlice | null>(null)
 
 const activeTab = ref<'transactions' | 'logs'>('transactions')
 
@@ -58,100 +77,33 @@ const logsPage = ref(1)
 
 const importId = computed(() => String(route.params.id ?? ''))
 
-function pageCount(total: number): number {
-  return Math.max(1, Math.ceil(total / ITEMS_PER_PAGE))
-}
-
-const transactionsPagination = computed(() => {
-  const total = transactions.value.length
-  const lastPage = pageCount(total)
-  const currentPage = Math.min(Math.max(1, transactionsPage.value), lastPage)
-  if (total === 0) {
-    return {
-      total: 0,
-      lastPage: 1,
-      currentPage: 1,
-      from: 0,
-      to: 0,
-    }
-  }
-  const from = (currentPage - 1) * ITEMS_PER_PAGE + 1
-  const to = Math.min(currentPage * ITEMS_PER_PAGE, total)
-  return { total, lastPage, currentPage, from, to }
-})
-
-const logsPagination = computed(() => {
-  const total = importLogs.value.length
-  const lastPage = pageCount(total)
-  const currentPage = Math.min(Math.max(1, logsPage.value), lastPage)
-  if (total === 0) {
-    return {
-      total: 0,
-      lastPage: 1,
-      currentPage: 1,
-      from: 0,
-      to: 0,
-    }
-  }
-  const from = (currentPage - 1) * ITEMS_PER_PAGE + 1
-  const to = Math.min(currentPage * ITEMS_PER_PAGE, total)
-  return { total, lastPage, currentPage, from, to }
-})
-
 const canTransactionsPrev = computed(
-  () => transactionsPagination.value.currentPage > 1,
+  () => (transactionsPagination.value?.current_page ?? 1) > 1,
 )
-const canTransactionsNext = computed(
-  () =>
-    transactionsPagination.value.currentPage < transactionsPagination.value.lastPage,
-)
-
-const canLogsPrev = computed(() => logsPagination.value.currentPage > 1)
-const canLogsNext = computed(
-  () => logsPagination.value.currentPage < logsPagination.value.lastPage,
-)
-
-const paginatedTransactions = computed(() => {
-  const total = transactions.value.length
-  const lastPage = pageCount(total)
-  const currentPage = Math.min(Math.max(1, transactionsPage.value), lastPage)
-  const start = (currentPage - 1) * ITEMS_PER_PAGE
-  return transactions.value.slice(start, start + ITEMS_PER_PAGE)
+const canTransactionsNext = computed(() => {
+  const p = transactionsPagination.value
+  if (!p) return false
+  return p.current_page < p.last_page
 })
 
-const paginatedLogs = computed(() => {
-  const total = importLogs.value.length
-  const lastPage = pageCount(total)
-  const currentPage = Math.min(Math.max(1, logsPage.value), lastPage)
-  const start = (currentPage - 1) * ITEMS_PER_PAGE
-  return importLogs.value.slice(start, start + ITEMS_PER_PAGE)
+const canLogsPrev = computed(
+  () => (logsPagination.value?.current_page ?? 1) > 1,
+)
+const canLogsNext = computed(() => {
+  const p = logsPagination.value
+  if (!p) return false
+  return p.current_page < p.last_page
 })
 
-function goTransactionsPrev(): void {
-  if (!canTransactionsPrev.value) return
-  transactionsPage.value -= 1
-}
-
-function goTransactionsNext(): void {
-  if (!canTransactionsNext.value) return
-  transactionsPage.value += 1
-}
-
-function goLogsPrev(): void {
-  if (!canLogsPrev.value) return
-  logsPage.value -= 1
-}
-
-function goLogsNext(): void {
-  if (!canLogsNext.value) return
-  logsPage.value += 1
-}
-
-const detailUrl = computed(() => {
+function buildDetailUrl(): string {
   const id = importId.value
-  if (!id) return ''
-  return new URL(`/api/imports/${encodeURIComponent(id)}`, apiBase).href
-})
+  const url = new URL(`/api/imports/${encodeURIComponent(id)}`, apiBase)
+  url.searchParams.set('transactions_page', String(transactionsPage.value))
+  url.searchParams.set('transactions_per_page', String(ITEMS_PER_PAGE))
+  url.searchParams.set('logs_page', String(logsPage.value))
+  url.searchParams.set('logs_per_page', String(ITEMS_PER_PAGE))
+  return url.href
+}
 
 function statusClass(status: string): string {
   const s = status.toLowerCase()
@@ -189,9 +141,9 @@ function formatDateOnly(iso: string | null | undefined): string {
   return new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium' }).format(d)
 }
 
-function formatAmount(amount: string): string {
-  const n = Number(amount)
-  if (Number.isNaN(n)) return amount
+function formatAmount(amount: string | number): string {
+  const n = typeof amount === 'number' ? amount : Number(amount)
+  if (Number.isNaN(n)) return String(amount)
   return new Intl.NumberFormat('pl-PL', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -199,15 +151,21 @@ function formatAmount(amount: string): string {
 }
 
 async function fetchDetail(): Promise<void> {
-  if (!detailUrl.value) {
+  const url = buildDetailUrl()
+  if (!importId.value) {
     error.value = 'Brak identyfikatora importu.'
     return
   }
 
-  loading.value = true
+  const isInitial = importSummary.value === null
+  if (isInitial) {
+    loading.value = true
+  } else {
+    loadingLists.value = true
+  }
   error.value = ''
   try {
-    const response = await fetch(detailUrl.value, {
+    const response = await fetch(url, {
       headers: { Accept: 'application/json' },
     })
     if (response.status === 404) {
@@ -215,6 +173,8 @@ async function fetchDetail(): Promise<void> {
       importSummary.value = null
       transactions.value = []
       importLogs.value = []
+      transactionsPagination.value = null
+      logsPagination.value = null
       transactionsPage.value = 1
       logsPage.value = 1
       return
@@ -230,44 +190,58 @@ async function fetchDetail(): Promise<void> {
     }
     importSummary.value = body.data.import
     transactions.value = body.data.transactions ?? []
-    importLogs.value = body.data.import_logs ?? []
-    transactionsPage.value = 1
-    logsPage.value = 1
+    importLogs.value = body.data.logs ?? []
+    transactionsPagination.value = body.data.transactions_pagination
+    logsPagination.value = body.data.logs_pagination
+
+    if (body.data.transactions_pagination) {
+      transactionsPage.value = body.data.transactions_pagination.current_page
+    }
+    if (body.data.logs_pagination) {
+      logsPage.value = body.data.logs_pagination.current_page
+    }
   } catch (e) {
     error.value = `Błąd sieci: ${(e as Error).message}`
   } finally {
     loading.value = false
+    loadingLists.value = false
   }
+}
+
+function goTransactionsPrev(): void {
+  if (!canTransactionsPrev.value) return
+  transactionsPage.value -= 1
+  void fetchDetail()
+}
+
+function goTransactionsNext(): void {
+  if (!canTransactionsNext.value) return
+  transactionsPage.value += 1
+  void fetchDetail()
+}
+
+function goLogsPrev(): void {
+  if (!canLogsPrev.value) return
+  logsPage.value -= 1
+  void fetchDetail()
+}
+
+function goLogsNext(): void {
+  if (!canLogsNext.value) return
+  logsPage.value += 1
+  void fetchDetail()
 }
 
 watch(importId, () => {
   importSummary.value = null
   transactions.value = []
   importLogs.value = []
+  transactionsPagination.value = null
+  logsPagination.value = null
   transactionsPage.value = 1
   logsPage.value = 1
   void fetchDetail()
 })
-
-watch(
-  () => transactions.value.length,
-  () => {
-    const last = pageCount(transactions.value.length)
-    if (transactionsPage.value > last) {
-      transactionsPage.value = last
-    }
-  },
-)
-
-watch(
-  () => importLogs.value.length,
-  () => {
-    const last = pageCount(importLogs.value.length)
-    if (logsPage.value > last) {
-      logsPage.value = last
-    }
-  },
-)
 
 onMounted(() => {
   void fetchDetail()
@@ -416,7 +390,7 @@ onMounted(() => {
             class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700"
           >
             <p class="text-sm text-slate-600 dark:text-slate-400">
-              <template v-if="transactionsPagination.total > 0">
+              <template v-if="transactionsPagination && transactionsPagination.total > 0">
                 Wyświetlanie {{ transactionsPagination.from }}–{{ transactionsPagination.to }} z
                 {{ transactionsPagination.total }}
               </template>
@@ -428,18 +402,18 @@ onMounted(() => {
               <button
                 type="button"
                 class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                :disabled="!canTransactionsPrev"
+                :disabled="!canTransactionsPrev || loadingLists"
                 @click="goTransactionsPrev"
               >
                 Poprzednia
               </button>
               <span class="text-sm tabular-nums text-slate-600 dark:text-slate-400">
-                Strona {{ transactionsPagination.currentPage }} z {{ transactionsPagination.lastPage }}
+                Strona {{ transactionsPagination?.current_page ?? 1 }} z {{ transactionsPagination?.last_page ?? 1 }}
               </span>
               <button
                 type="button"
                 class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                :disabled="!canTransactionsNext"
+                :disabled="!canTransactionsNext || loadingLists"
                 @click="goTransactionsNext"
               >
                 Następna
@@ -447,7 +421,16 @@ onMounted(() => {
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full min-w-[720px] text-left text-sm">
+            <p
+              v-if="loadingLists"
+              class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400"
+            >
+              Ładowanie…
+            </p>
+            <table
+              v-else
+              class="w-full min-w-[720px] text-left text-sm"
+            >
               <thead>
                 <tr class="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
                   <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
@@ -469,8 +452,8 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr
-                  v-for="(row, idx) in paginatedTransactions"
-                  :key="`tx-${transactionsPagination.from + idx}-${row.transaction_id}`"
+                  v-for="row in transactions"
+                  :key="row.id ?? `tx-${row.transaction_id}`"
                   class="border-b border-slate-100 last:border-0 dark:border-slate-800"
                 >
                   <td class="px-4 py-3 font-mono text-xs text-slate-900 dark:text-slate-100">
@@ -489,7 +472,7 @@ onMounted(() => {
                     {{ row.currency }}
                   </td>
                 </tr>
-                <tr v-if="transactions.length === 0">
+                <tr v-if="!loadingLists && transactions.length === 0">
                   <td
                     colspan="5"
                     class="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
@@ -510,7 +493,7 @@ onMounted(() => {
             class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700"
           >
             <p class="text-sm text-slate-600 dark:text-slate-400">
-              <template v-if="logsPagination.total > 0">
+              <template v-if="logsPagination && logsPagination.total > 0">
                 Wyświetlanie {{ logsPagination.from }}–{{ logsPagination.to }} z
                 {{ logsPagination.total }}
               </template>
@@ -522,18 +505,18 @@ onMounted(() => {
               <button
                 type="button"
                 class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                :disabled="!canLogsPrev"
+                :disabled="!canLogsPrev || loadingLists"
                 @click="goLogsPrev"
               >
                 Poprzednia
               </button>
               <span class="text-sm tabular-nums text-slate-600 dark:text-slate-400">
-                Strona {{ logsPagination.currentPage }} z {{ logsPagination.lastPage }}
+                Strona {{ logsPagination?.current_page ?? 1 }} z {{ logsPagination?.last_page ?? 1 }}
               </span>
               <button
                 type="button"
                 class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                :disabled="!canLogsNext"
+                :disabled="!canLogsNext || loadingLists"
                 @click="goLogsNext"
               >
                 Następna
@@ -541,7 +524,16 @@ onMounted(() => {
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full min-w-[640px] text-left text-sm">
+            <p
+              v-if="loadingLists"
+              class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400"
+            >
+              Ładowanie…
+            </p>
+            <table
+              v-else
+              class="w-full min-w-[640px] text-left text-sm"
+            >
               <thead>
                 <tr class="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
                   <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
@@ -557,8 +549,8 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr
-                  v-for="(row, idx) in paginatedLogs"
-                  :key="`log-${logsPagination.from + idx}-${row.transaction_id}`"
+                  v-for="row in importLogs"
+                  :key="row.id ?? `log-${row.transaction_id}`"
                   class="border-b border-slate-100 align-top last:border-0 dark:border-slate-800"
                 >
                   <td class="px-4 py-3 font-mono text-xs text-slate-900 dark:text-slate-100">
@@ -571,7 +563,7 @@ onMounted(() => {
                     {{ formatDate(row.created_at) }}
                   </td>
                 </tr>
-                <tr v-if="importLogs.length === 0">
+                <tr v-if="!loadingLists && importLogs.length === 0">
                   <td
                     colspan="3"
                     class="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
