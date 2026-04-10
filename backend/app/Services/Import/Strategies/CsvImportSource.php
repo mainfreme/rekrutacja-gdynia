@@ -12,7 +12,8 @@ final class CsvImportSource implements ImportSourceInterface
     public function __construct(
         private readonly string $path,
         private readonly string $delimiter = ',',
-    ) {}
+    ) {
+    }
 
     public function records(): \Generator
     {

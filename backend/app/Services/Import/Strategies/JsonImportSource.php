@@ -10,7 +10,8 @@ final class JsonImportSource implements ImportSourceInterface
 {
     public function __construct(
         private readonly string $path,
-    ) {}
+    ) {
+    }
 
     public function records(): \Generator
     {

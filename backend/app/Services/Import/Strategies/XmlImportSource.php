@@ -11,11 +11,12 @@ final class XmlImportSource implements ImportSourceInterface
     public function __construct(
         private readonly string $path,
         private readonly string $recordLocalName = 'row',
-    ) {}
+    ) {
+    }
 
     public function records(): \Generator
     {
-        $reader = new \XMLReader;
+        $reader = new \XMLReader();
         if (! $reader->open($this->path)) {
             throw new \RuntimeException("Cannot open XML file: {$this->path}");
         }
