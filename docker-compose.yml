@@ -20,6 +20,8 @@ services:
       context: ./docker/php
     volumes:
       - ./backend:/var/www/html
+      # Pliki zapisane w kontenerze do /var/www/html/exports trafiają na host do ./exports (obok backend/)
+      - ./exports:/var/www/html/exports
     environment:
       DB_CONNECTION: mysql
       DB_HOST: mysql
@@ -37,6 +39,21 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    networks:
+      - stack
+
+  # Worker kolejki — joby (ProcessImportJob itd.) poza żądaniem HTTP; ten sam kod co `app` (czyta ./backend/.env)
+  queue:
+    build:
+      context: ./docker/php
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+      - ./exports:/var/www/html/exports
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=0
     networks:
       - stack
 

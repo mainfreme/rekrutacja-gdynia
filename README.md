@@ -36,7 +36,7 @@ Z katalogu głównego projektu:
 docker compose up -d --build
 ```
 
-Pierwsze uruchomienie pobierze obrazy i zbuduje serwis `app` (PHP). Poczekaj, aż MySQL i RabbitMQ przejdą healthcheck (kilkadziesiąt sekund).
+Pierwsze uruchomienie pobierze obrazy i zbuduje serwisy `app` i `queue` (PHP). Poczekaj, aż MySQL i RabbitMQ przejdą healthcheck (kilkadziesiąt sekund). Kontener **`queue`** uruchamia worker kolejki (`php artisan queue:work`) — patrz [Kolejki](#7-kolejki-importów).
 
 ### 4. Zależności PHP i migracje
 
@@ -64,15 +64,60 @@ Zostaw ten proces w terminalu w czasie pracy. Po zmianach w kodzie frontu Vite z
 | Vite (Vue) | http://localhost:5173 |
 | Panel RabbitMQ (management) | http://localhost:15672 — domyślnie użytkownik `laravel`, hasło `secret` (jak w compose) |
 
-### 7. Kolejki (opcjonalnie)
+### 7. Kolejki (importów)
 
-Jeśli używasz zadań w tle (`ShouldQueue` itd.), uruchom worker w osobnym terminalu:
+Import plików (CSV / JSON / XML) idzie przez kolejkę Laravel (`ShouldQueue`, m.in. `ProcessImportJob`). Żeby **upload HTTP** nie czekał na przetworzenie całego pliku, w `backend/.env` ustaw **`QUEUE_CONNECTION=database`** (tak jest w `backend/.env.example`). Po migracjach powstaną m.in. tabele `jobs` i `job_batches`.
+
+**Zalecane (Docker):** razem ze stackiem startuje serwis **`queue`** — osobny kontener z `php artisan queue:work --sleep=3 --tries=3 --timeout=0`. Nie musisz nic uruchamiać ręcznie.
 
 ```bash
+# status / logi workera
+docker compose ps queue
+docker compose logs -f queue
+```
+
+**Uwaga:** nie uruchamiaj wtedy drugiego workera w tle w kontenerze `app` (`docker compose exec app php artisan queue:work`), bo zadania mogłyby się **podwójnie** pobierać z kolejki. Jeśli wolisz tylko ręczny worker, zatrzymaj serwis:
+
+```bash
+docker compose stop queue
 docker compose exec app php artisan queue:work
 ```
 
-(W `backend/.env.example` domyślnie jest `QUEUE_CONNECTION=database` — dostosuj do swojej konfiguracji.)
+**Bez Dockera:** w katalogu `backend` uruchom `php artisan queue:work` w osobnym terminalu (z tym samym `QUEUE_CONNECTION` i dostępem do bazy co aplikacja).
+
+### 8. Generowanie pliku testowego JSON (import)
+
+Artisan generuje tablicę obiektów z polami zgodnymi z importem (`transaction_id`, `account_number`, `transaction_date`, `amount`, `currency`). Numery kont są losowymi polskimi IBAN z poprawnym checksum, żeby przechodziły walidację w aplikacji.
+
+**Docker — plik poza kontenerem (na hoście):** w `docker-compose.yml` katalog `./exports` z **rootu repozytorium** jest zamontowany jako `/var/www/html/exports` w serwisie `app`. Domyślna ścieżka komendy to `exports/import.json` wewnątrz aplikacji, więc na komputerze-hostcie plik pojawia się jako:
+
+**`exports/import.json`** (obok folderów `backend/`, `frontend/`, obok `docker-compose.yml`) — możesz go otworzyć w Finderze / IDE albo wgrać do importu bez `docker cp`.
+
+W kontenerze to ten sam plik: `/var/www/html/exports/import.json`.
+
+```bash
+# z hosta, z katalogu głównego repozytorium:
+docker compose exec app php artisan import:generate-json-file
+
+# mniejszy plik (szybszy test):
+docker compose exec app php artisan import:generate-json-file --limit=5000
+```
+
+Po **pierwszej** zmianie `docker-compose.yml` z nowym volume zrób restart kontenera `app` (np. `docker compose up -d`).
+
+**Inna ścieżka** — pierwszy argument jest względem katalogu `backend/` w kontenerze (`/var/www/html/`). Żeby zapisać nadal „na zewnątrz” w `./exports` na hoście, używaj prefiksu `exports/`:
+
+```bash
+docker compose exec app php artisan import:generate-json-file exports/moj-plik.json
+```
+
+Bez Dockera (uruchamiasz `artisan` z katalogu `backend/`) domyślnie powstaje **`backend/exports/import.json`** (podkatalog projektu Laravel).
+
+```bash
+cd backend
+php artisan import:generate-json-file
+php artisan import:generate-json-file --limit=1000
+```
 
 ### Zatrzymanie
 
