@@ -5,6 +5,9 @@ import { useRoute } from 'vue-router'
 const apiBase =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8080'
 
+/** Liczba wierszy na stronę w zakładkach Transakcje i Logi (paginacja po stronie klienta). */
+const ITEMS_PER_PAGE = 30
+
 interface ImportSummary {
   id: number
   file_name: string
@@ -50,7 +53,99 @@ const importLogs = ref<ImportLogRow[]>([])
 
 const activeTab = ref<'transactions' | 'logs'>('transactions')
 
+const transactionsPage = ref(1)
+const logsPage = ref(1)
+
 const importId = computed(() => String(route.params.id ?? ''))
+
+function pageCount(total: number): number {
+  return Math.max(1, Math.ceil(total / ITEMS_PER_PAGE))
+}
+
+const transactionsPagination = computed(() => {
+  const total = transactions.value.length
+  const lastPage = pageCount(total)
+  const currentPage = Math.min(Math.max(1, transactionsPage.value), lastPage)
+  if (total === 0) {
+    return {
+      total: 0,
+      lastPage: 1,
+      currentPage: 1,
+      from: 0,
+      to: 0,
+    }
+  }
+  const from = (currentPage - 1) * ITEMS_PER_PAGE + 1
+  const to = Math.min(currentPage * ITEMS_PER_PAGE, total)
+  return { total, lastPage, currentPage, from, to }
+})
+
+const logsPagination = computed(() => {
+  const total = importLogs.value.length
+  const lastPage = pageCount(total)
+  const currentPage = Math.min(Math.max(1, logsPage.value), lastPage)
+  if (total === 0) {
+    return {
+      total: 0,
+      lastPage: 1,
+      currentPage: 1,
+      from: 0,
+      to: 0,
+    }
+  }
+  const from = (currentPage - 1) * ITEMS_PER_PAGE + 1
+  const to = Math.min(currentPage * ITEMS_PER_PAGE, total)
+  return { total, lastPage, currentPage, from, to }
+})
+
+const canTransactionsPrev = computed(
+  () => transactionsPagination.value.currentPage > 1,
+)
+const canTransactionsNext = computed(
+  () =>
+    transactionsPagination.value.currentPage < transactionsPagination.value.lastPage,
+)
+
+const canLogsPrev = computed(() => logsPagination.value.currentPage > 1)
+const canLogsNext = computed(
+  () => logsPagination.value.currentPage < logsPagination.value.lastPage,
+)
+
+const paginatedTransactions = computed(() => {
+  const total = transactions.value.length
+  const lastPage = pageCount(total)
+  const currentPage = Math.min(Math.max(1, transactionsPage.value), lastPage)
+  const start = (currentPage - 1) * ITEMS_PER_PAGE
+  return transactions.value.slice(start, start + ITEMS_PER_PAGE)
+})
+
+const paginatedLogs = computed(() => {
+  const total = importLogs.value.length
+  const lastPage = pageCount(total)
+  const currentPage = Math.min(Math.max(1, logsPage.value), lastPage)
+  const start = (currentPage - 1) * ITEMS_PER_PAGE
+  return importLogs.value.slice(start, start + ITEMS_PER_PAGE)
+})
+
+function goTransactionsPrev(): void {
+  if (!canTransactionsPrev.value) return
+  transactionsPage.value -= 1
+}
+
+function goTransactionsNext(): void {
+  if (!canTransactionsNext.value) return
+  transactionsPage.value += 1
+}
+
+function goLogsPrev(): void {
+  if (!canLogsPrev.value) return
+  logsPage.value -= 1
+}
+
+function goLogsNext(): void {
+  if (!canLogsNext.value) return
+  logsPage.value += 1
+}
 
 const detailUrl = computed(() => {
   const id = importId.value
@@ -120,6 +215,8 @@ async function fetchDetail(): Promise<void> {
       importSummary.value = null
       transactions.value = []
       importLogs.value = []
+      transactionsPage.value = 1
+      logsPage.value = 1
       return
     }
     if (!response.ok) {
@@ -134,6 +231,8 @@ async function fetchDetail(): Promise<void> {
     importSummary.value = body.data.import
     transactions.value = body.data.transactions ?? []
     importLogs.value = body.data.import_logs ?? []
+    transactionsPage.value = 1
+    logsPage.value = 1
   } catch (e) {
     error.value = `Błąd sieci: ${(e as Error).message}`
   } finally {
@@ -145,8 +244,30 @@ watch(importId, () => {
   importSummary.value = null
   transactions.value = []
   importLogs.value = []
+  transactionsPage.value = 1
+  logsPage.value = 1
   void fetchDetail()
 })
+
+watch(
+  () => transactions.value.length,
+  () => {
+    const last = pageCount(transactions.value.length)
+    if (transactionsPage.value > last) {
+      transactionsPage.value = last
+    }
+  },
+)
+
+watch(
+  () => importLogs.value.length,
+  () => {
+    const last = pageCount(importLogs.value.length)
+    if (logsPage.value > last) {
+      logsPage.value = last
+    }
+  },
+)
 
 onMounted(() => {
   void fetchDetail()
@@ -287,106 +408,180 @@ onMounted(() => {
           </button>
         </div>
 
-        <div class="overflow-x-auto">
-          <table
-            v-show="activeTab === 'transactions'"
-            class="w-full min-w-[720px] text-left text-sm"
+        <div
+          v-show="activeTab === 'transactions'"
+          class="flex flex-col"
+        >
+          <div
+            class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700"
           >
-            <thead>
-              <tr class="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
-                <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  ID transakcji
-                </th>
-                <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  Numer konta
-                </th>
-                <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  Data
-                </th>
-                <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  Kwota
-                </th>
-                <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  Waluta
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(row, idx) in transactions"
-                :key="`tx-${idx}-${row.transaction_id}`"
-                class="border-b border-slate-100 last:border-0 dark:border-slate-800"
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              <template v-if="transactionsPagination.total > 0">
+                Wyświetlanie {{ transactionsPagination.from }}–{{ transactionsPagination.to }} z
+                {{ transactionsPagination.total }}
+              </template>
+              <template v-else>
+                Brak rekordów
+              </template>
+            </p>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                :disabled="!canTransactionsPrev"
+                @click="goTransactionsPrev"
               >
-                <td class="px-4 py-3 font-mono text-xs text-slate-900 dark:text-slate-100">
-                  {{ row.transaction_id }}
-                </td>
-                <td class="px-4 py-3 text-slate-900 dark:text-slate-100">
-                  {{ row.account_number }}
-                </td>
-                <td class="whitespace-nowrap px-4 py-3 text-slate-700 dark:text-slate-300">
-                  {{ formatDateOnly(row.transaction_date) }}
-                </td>
-                <td class="px-4 py-3 tabular-nums text-slate-900 dark:text-slate-100">
-                  {{ formatAmount(row.amount) }}
-                </td>
-                <td class="px-4 py-3 uppercase text-slate-700 dark:text-slate-300">
-                  {{ row.currency }}
-                </td>
-              </tr>
-              <tr v-if="transactions.length === 0">
-                <td
-                  colspan="5"
-                  class="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
+                Poprzednia
+              </button>
+              <span class="text-sm tabular-nums text-slate-600 dark:text-slate-400">
+                Strona {{ transactionsPagination.currentPage }} z {{ transactionsPagination.lastPage }}
+              </span>
+              <button
+                type="button"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                :disabled="!canTransactionsNext"
+                @click="goTransactionsNext"
+              >
+                Następna
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
+                  <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    ID transakcji
+                  </th>
+                  <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    Numer konta
+                  </th>
+                  <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    Data
+                  </th>
+                  <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    Kwota
+                  </th>
+                  <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    Waluta
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(row, idx) in paginatedTransactions"
+                  :key="`tx-${transactionsPagination.from + idx}-${row.transaction_id}`"
+                  class="border-b border-slate-100 last:border-0 dark:border-slate-800"
                 >
-                  Brak zapisanych transakcji dla tego importu.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <td class="px-4 py-3 font-mono text-xs text-slate-900 dark:text-slate-100">
+                    {{ row.transaction_id }}
+                  </td>
+                  <td class="px-4 py-3 text-slate-900 dark:text-slate-100">
+                    {{ row.account_number }}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3 text-slate-700 dark:text-slate-300">
+                    {{ formatDateOnly(row.transaction_date) }}
+                  </td>
+                  <td class="px-4 py-3 tabular-nums text-slate-900 dark:text-slate-100">
+                    {{ formatAmount(row.amount) }}
+                  </td>
+                  <td class="px-4 py-3 uppercase text-slate-700 dark:text-slate-300">
+                    {{ row.currency }}
+                  </td>
+                </tr>
+                <tr v-if="transactions.length === 0">
+                  <td
+                    colspan="5"
+                    class="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
+                  >
+                    Brak zapisanych transakcji dla tego importu.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-          <table
-            v-show="activeTab === 'logs'"
-            class="w-full min-w-[640px] text-left text-sm"
+        <div
+          v-show="activeTab === 'logs'"
+          class="flex flex-col"
+        >
+          <div
+            class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700"
           >
-            <thead>
-              <tr class="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
-                <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  ID transakcji
-                </th>
-                <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  Komunikat
-                </th>
-                <th class="whitespace-nowrap px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                  Czas
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(row, idx) in importLogs"
-                :key="`log-${idx}-${row.transaction_id}`"
-                class="border-b border-slate-100 align-top last:border-0 dark:border-slate-800"
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              <template v-if="logsPagination.total > 0">
+                Wyświetlanie {{ logsPagination.from }}–{{ logsPagination.to }} z
+                {{ logsPagination.total }}
+              </template>
+              <template v-else>
+                Brak rekordów
+              </template>
+            </p>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                :disabled="!canLogsPrev"
+                @click="goLogsPrev"
               >
-                <td class="px-4 py-3 font-mono text-xs text-slate-900 dark:text-slate-100">
-                  {{ row.transaction_id }}
-                </td>
-                <td class="max-w-md break-words px-4 py-3 text-slate-800 dark:text-slate-200">
-                  {{ row.error_message || '—' }}
-                </td>
-                <td class="whitespace-nowrap px-4 py-3 text-slate-600 dark:text-slate-400">
-                  {{ formatDate(row.created_at) }}
-                </td>
-              </tr>
-              <tr v-if="importLogs.length === 0">
-                <td
-                  colspan="3"
-                  class="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
+                Poprzednia
+              </button>
+              <span class="text-sm tabular-nums text-slate-600 dark:text-slate-400">
+                Strona {{ logsPagination.currentPage }} z {{ logsPagination.lastPage }}
+              </span>
+              <button
+                type="button"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                :disabled="!canLogsNext"
+                @click="goLogsNext"
+              >
+                Następna
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
+                  <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    ID transakcji
+                  </th>
+                  <th class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    Komunikat
+                  </th>
+                  <th class="whitespace-nowrap px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                    Czas
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(row, idx) in paginatedLogs"
+                  :key="`log-${logsPagination.from + idx}-${row.transaction_id}`"
+                  class="border-b border-slate-100 align-top last:border-0 dark:border-slate-800"
                 >
-                  Brak wpisów w logach dla tego importu.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <td class="px-4 py-3 font-mono text-xs text-slate-900 dark:text-slate-100">
+                    {{ row.transaction_id }}
+                  </td>
+                  <td class="max-w-md break-words px-4 py-3 text-slate-800 dark:text-slate-200">
+                    {{ row.error_message || '—' }}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3 text-slate-600 dark:text-slate-400">
+                    {{ formatDate(row.created_at) }}
+                  </td>
+                </tr>
+                <tr v-if="importLogs.length === 0">
+                  <td
+                    colspan="3"
+                    class="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
+                  >
+                    Brak wpisów w logach dla tego importu.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </template>
