@@ -19,11 +19,13 @@ class UploadImportController extends ApiController
         $file = $request->file('file');
 
         try {
+            $path = $file->store('imports');
+
             $import = Import::create([
                 'file_name' => $file->getClientOriginalName(),
             ]);
 
-            ProcessImportJob::dispatch($import->id, $file);
+            ProcessImportJob::dispatch($import->id, $path);
 
             $import->refresh();
 
