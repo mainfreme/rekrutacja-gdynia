@@ -13,7 +13,8 @@ class ImportController extends ApiController
 {
     public function __construct(
         private readonly ImportListService $importListService,
-    ) {}
+    ) {
+    }
 
     /**
      * Get the list of imports

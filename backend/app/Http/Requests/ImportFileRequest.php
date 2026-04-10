@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class ImportFileRequest extends FormRequest
+class ImportFileRequest extends ApiFormRequest
 {
     public function authorize(): bool
     {
@@ -17,7 +15,6 @@ class ImportFileRequest extends FormRequest
     {
         return [
             'file' => ['required', 'file', 'extensions:csv,json,xml'],
-            'type' => ['required', 'string', 'in:csv,json,xml'],
         ];
     }
 }

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 class ImportResource extends JsonResource
 {
-    /** 
+    /**
      * @param Request $request
      * @return array<string, mixed>
     */
