@@ -263,9 +263,9 @@ onMounted(() => {
               <td class="whitespace-nowrap px-4 py-3 text-slate-600 dark:text-slate-400">
                 {{ formatDate(row.created_at) }}
               </td>
-              <td>
+              <td class="px-4 py-3">
                 <router-link
-                  to="/import/details/{{ row.id }}"
+                  :to="`/import/details/${row.id}`"
                   class="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
                 >
                   Szczegóły
