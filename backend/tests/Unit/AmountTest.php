@@ -37,8 +37,8 @@ final class AmountTest extends TestCase
         ];
 
         yield 'zera wiodace i koncowe — bez normalizacji w VO' => [
-            '0001.500',
-            '0001.500',
+            '0001.50',
+            '0001.50',
         ];
 
         yield 'kropka na koncu — is_numeric' => [

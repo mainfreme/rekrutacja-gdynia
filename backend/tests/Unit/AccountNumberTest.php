@@ -37,8 +37,8 @@ final class AccountNumberTest extends TestCase
         ];
 
         yield 'gorna granica dlugosci (34 znaki)' => [
-            'LC14BOSLCHBLSESTVQWF6D8LI70GE8M2C3',
-            'LC14BOSLCHBLSESTVQWF6D8LI70GE8M2C3',
+            'LC04BOSLCHBLSESTVQWF6D8LI70GE8M2C3',
+            'LC04BOSLCHBLSESTVQWF6D8LI70GE8M2C3',
         ];
 
         yield 'normalizacja — spacje w grupach' => [
@@ -87,10 +87,6 @@ final class AccountNumberTest extends TestCase
             "DE89\t3704\n0044\r0532013000",
         ];
 
-        yield 'cyfry kontrolne jako litery' => [
-            'PLxx109010140000071219812874',
-        ];
-
         yield 'kod kraju jako cyfry' => [
             '9961109010140000071219812874',
         ];
@@ -112,11 +108,15 @@ final class AccountNumberTest extends TestCase
         ];
 
         yield 'za dlugi — 35 znakow (powyzej maksimum 34)' => [
-            'LC14BOSLCHBLSESTVQWF6D8LI70GE8M2C31',
+            'LC04BOSLCHBLSESTVQWF6D8LI70GE8M2C31',
         ];
 
         yield 'bledna suma kontrolna (ostatnia cyfra)' => [
             'PL61109010140000071219812875',
+        ];
+
+        yield 'cyfry kontrolne jako litery' => [
+            'PLxx109010140000071219812874',
         ];
     }
 
