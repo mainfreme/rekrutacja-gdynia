@@ -10,7 +10,7 @@ final class XmlImportSource implements ImportSourceInterface
 {
     public function __construct(
         private readonly string $path,
-        private readonly string $recordLocalName = 'row',
+        private readonly string $recordLocalName = 'transaction',
     ) {
     }
 
