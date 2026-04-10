@@ -53,4 +53,9 @@ final class Import extends Model
     {
         return $this->hasMany(ImportLogs::class);
     }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transactions::class);
+    }
 }

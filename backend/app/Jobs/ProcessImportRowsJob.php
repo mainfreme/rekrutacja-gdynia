@@ -50,7 +50,10 @@ class ProcessImportRowsJob implements ShouldQueue
 
             try {
                 $dto = $parser->parse($row);
-                Transactions::query()->create($dto->toArray());
+                Transactions::query()->create([
+                    ...$dto->toArray(),
+                    'import_id' => $this->importId,
+                ]);
                 $successful++;
             } catch (\Throwable $e) {
                 $failed++;
