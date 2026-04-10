@@ -10,6 +10,8 @@ final class Transactions extends Model
 {
     public $timestamps = false;
 
+    protected $table = 'transactions';
+
     protected $fillable = [
         'transaction_id',
         'account_number',

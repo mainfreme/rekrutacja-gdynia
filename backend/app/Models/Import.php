@@ -6,11 +6,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Arr;
 
 final class Import extends Model
 {
     public $timestamps = false;
+
+    protected $table = 'imports';
 
     protected $fillable = [
         'file_name',

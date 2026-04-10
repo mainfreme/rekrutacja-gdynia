@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class ImportLogs extends Model
 {
+    public $timestamps = false;
+
+    protected $table = 'import_logs';
+
     protected $fillable = [
         'import_id',
         'transaction_id',
