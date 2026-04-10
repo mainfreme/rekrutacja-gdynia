@@ -17,6 +17,12 @@ const app = useAppStore()
           {{ app.title }}
         </p>
       </div>
+      <router-link
+        to="/imports"
+        class="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+      >
+        Lista importów
+      </router-link>
     </header>
 
     <section
