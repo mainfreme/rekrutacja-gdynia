@@ -7,7 +7,7 @@ namespace Tests\Unit;
 use App\ValueObjects\Amount;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 final class AmountTest extends TestCase
 {
@@ -48,32 +48,32 @@ final class AmountTest extends TestCase
     }
 
     #[DataProvider('notNumericCases')]
-    public function test_rejects_when_not_numeric(string $input): void
+    public function test_rejects_when_not_numeric(string $input, string $expectedMessage): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Amount must be numeric');
+        $this->expectExceptionMessage($expectedMessage);
 
         new Amount($input);
     }
 
     public static function notNumericCases(): \Generator
     {
-        yield 'pusty string' => [''];
+        yield 'pusty string' => ['', 'Kwota jest wymagana'];
 
-        yield 'same biale znaki' => ['   '];
+        yield 'same biale znaki' => ['   ', 'Kwota jest wymagana'];
 
-        yield 'przecinek zamiast kropki' => ['1,5'];
+        yield 'przecinek zamiast kropki' => ['1,5', 'Kwota musi byc liczba'];
 
-        yield 'dwa separatory' => ['1.2.3'];
+        yield 'dwa separatory' => ['1.2.3', 'Kwota musi byc liczba'];
 
-        yield 'nie numeryczne' => ['abc'];
+        yield 'nie numeryczne' => ['abc', 'Kwota musi byc liczba'];
     }
 
     #[DataProvider('notPositiveCases')]
     public function test_rejects_when_not_greater_than_zero(string $input): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Amount must be greater than 0');
+        $this->expectExceptionMessage('Kwota musi byc wieksza od 0');
 
         new Amount($input);
     }
@@ -93,7 +93,7 @@ final class AmountTest extends TestCase
     public function test_rejects_when_precision_or_format_is_invalid(string $input): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Amount must have up to 2 decimal places');
+        $this->expectExceptionMessage('Kwota musi miec maksymalnie 2 miejsca po przecinku');
 
         new Amount($input);
     }

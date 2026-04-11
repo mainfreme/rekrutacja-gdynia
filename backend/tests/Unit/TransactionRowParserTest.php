@@ -278,7 +278,7 @@ final class TransactionRowParserTest extends TestCase
     public function test_parse_propagates_amount_vo_rejection_for_zero(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Amount must be greater than 0');
+        $this->expectExceptionMessage('Kwota musi byc wieksza od 0');
 
         $this->parser->parse([
             'transaction_id' => 'X',
@@ -292,7 +292,7 @@ final class TransactionRowParserTest extends TestCase
     public function test_parse_propagates_amount_vo_rejection_for_negative(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Amount must be greater than 0');
+        $this->expectExceptionMessage('Kwota musi byc wieksza od 0');
 
         $this->parser->parse([
             'transaction_id' => 'X',
@@ -306,7 +306,7 @@ final class TransactionRowParserTest extends TestCase
     public function test_parse_propagates_invalid_iban_from_account_number(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid IBAN checksum');
+        $this->expectExceptionMessage('Nieprawidlowy IBAN');
 
         $this->parser->parse([
             'transaction_id' => 'X',
@@ -320,7 +320,7 @@ final class TransactionRowParserTest extends TestCase
     public function test_parse_propagates_invalid_currency_code(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Currency must be a 3-letter code');
+        $this->expectExceptionMessage('Waluta musi miec 3 litery (e.g. PLN, USD)');
 
         $this->parser->parse([
             'transaction_id' => 'X',
@@ -334,7 +334,7 @@ final class TransactionRowParserTest extends TestCase
     public function test_parse_propagates_empty_account_number(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Account number cannot be empty');
+        $this->expectExceptionMessage('Numer konta jest wymagany');
 
         $this->parser->parse([
             'transaction_id' => 'X',

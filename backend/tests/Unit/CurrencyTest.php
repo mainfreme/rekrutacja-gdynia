@@ -7,7 +7,7 @@ namespace Tests\Unit;
 use App\ValueObjects\Currency;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 final class CurrencyTest extends TestCase
 {
@@ -27,24 +27,24 @@ final class CurrencyTest extends TestCase
     }
 
     #[DataProvider('invalidCurrencyCodes')]
-    public function test_rejects_invalid_currency_codes(string $input): void
+    public function test_rejects_invalid_currency_codes(string $input, string $expectedMessage): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Currency must be a 3-letter code (e.g. PLN, USD)');
+        $this->expectExceptionMessage($expectedMessage);
 
         new Currency($input);
     }
 
     public static function invalidCurrencyCodes(): \Generator
     {
-        yield 'empty string' => [''];
-        yield 'too short' => ['PL'];
-        yield 'too long' => ['PLNN'];
-        yield 'contains digit' => ['U1D'];
-        yield 'contains space' => ['US D'];
-        yield 'contains dash' => ['US-'];
-        yield 'contains special character' => ['€UR'];
-        yield 'leading and trailing spaces' => [' usd '];
+        yield 'empty string' => ['', 'Waluta jest wymagana'];
+        yield 'too short' => ['PL', 'Waluta musi miec 3 litery (e.g. PLN, USD)'];
+        yield 'too long' => ['PLNN', 'Waluta musi miec 3 litery (e.g. PLN, USD)'];
+        yield 'contains digit' => ['U1D', 'Waluta musi miec 3 litery (e.g. PLN, USD)'];
+        yield 'contains space' => ['US D', 'Waluta musi miec 3 litery (e.g. PLN, USD)'];
+        yield 'contains dash' => ['US-', 'Waluta musi miec 3 litery (e.g. PLN, USD)'];
+        yield 'contains special character' => ['€UR', 'Waluta musi miec 3 litery (e.g. PLN, USD)'];
+        yield 'leading and trailing spaces' => [' usd ', 'Waluta musi miec 3 litery (e.g. PLN, USD)'];
     }
 
     public function test_equals_true_for_same_code_after_normalization(): void
