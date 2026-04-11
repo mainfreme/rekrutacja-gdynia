@@ -7,7 +7,7 @@ namespace Tests\Unit;
 use App\ValueObjects\AccountNumber;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 final class AccountNumberTest extends TestCase
 {
@@ -56,7 +56,7 @@ final class AccountNumberTest extends TestCase
     public function test_rejects_when_value_empty_after_space_normalization(string $input): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Account number cannot be empty');
+        $this->expectExceptionMessage('Numer konta jest wymagany');
 
         new AccountNumber($input);
     }
@@ -72,7 +72,7 @@ final class AccountNumberTest extends TestCase
     public function test_rejects_when_iban_format_is_invalid(string $input): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid IBAN format');
+        $this->expectExceptionMessage('Nieprawidlowy IBAN');
 
         new AccountNumber($input);
     }
@@ -96,7 +96,7 @@ final class AccountNumberTest extends TestCase
     public function test_rejects_when_iban_checksum_is_invalid(string $input): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid IBAN checksum');
+        $this->expectExceptionMessage('Nieprawidlowy IBAN');
 
         new AccountNumber($input);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ValueObjects;
 
+use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
 
 final class Amount
@@ -28,16 +29,30 @@ final class Amount
      */
     private function assertValid(string $value): void
     {
-        if (!is_numeric($value)) {
-            throw new InvalidArgumentException('Amount must be numeric');
-        }
+        $validator = Validator::make(
+            ['amount' => $value],
+            [
+                'amount' => [
+                    'bail',
+                    'required',
+                    'numeric',
+                    'regex:/^-?\d+(?:\.\d{0,2})?$/',
+                    function (string $attribute, mixed $val, \Closure $fail): void {
+                        if (bccomp((string) $val, '0', 2) <= 0) {
+                            $fail('Kwota musi byc wieksza od 0');
+                        }
+                    },
+                ],
+            ],
+            [
+                'amount.required' => 'Kwota jest wymagana',
+                'amount.numeric' => 'Kwota musi byc liczba',
+                'amount.regex' => 'Kwota musi miec maksymalnie 2 miejsca po przecinku',
+            ]
+        );
 
-        if (!preg_match('/^-?\d+(?:\.\d{0,2})?$/', $value)) {
-            throw new InvalidArgumentException('Amount must have up to 2 decimal places');
-        }
-
-        if (bccomp($value, '0', 2) <= 0) {
-            throw new InvalidArgumentException('Amount must be greater than 0');
+        if ($validator->fails()) {
+            throw new InvalidArgumentException((string) $validator->errors()->first('amount'));
         }
     }
 

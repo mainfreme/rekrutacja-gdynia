@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ValueObjects;
 
+use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
 
 final class Currency
@@ -24,11 +25,25 @@ final class Currency
 
     private function assertValid(string $value): void
     {
-        // dokładnie 3 litery A-Z
-        if (!preg_match('/^[A-Z]{3}$/', strtoupper($value))) {
-            throw new InvalidArgumentException(
-                'Currency must be a 3-letter code (e.g. PLN, USD)'
-            );
+        $normalized = strtoupper($value);
+
+        $validator = Validator::make(
+            ['currency' => $normalized],
+            [
+                'currency' => [
+                    'bail',
+                    'required',
+                    'regex:/^[A-Z]{3}$/',
+                ],
+            ],
+            [
+                'currency.required' => 'Waluta jest wymagana',
+                'currency.regex' => 'Waluta musi miec 3 litery (e.g. PLN, USD)',
+            ]
+        );
+
+        if ($validator->fails()) {
+            throw new InvalidArgumentException((string) $validator->errors()->first('currency'));
         }
     }
 
