@@ -6,7 +6,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property Carbon|null $created_at
+ */
 final class Import extends Model
 {
     public $timestamps = false;
@@ -49,11 +53,17 @@ final class Import extends Model
         ];
     }
 
+    /**
+     * @return HasMany<ImportLogs, $this>
+     */
     public function logs(): HasMany
     {
         return $this->hasMany(ImportLogs::class);
     }
 
+    /**
+     * @return HasMany<Transactions, $this>
+     */
     public function transactions(): HasMany
     {
         return $this->hasMany(Transactions::class);

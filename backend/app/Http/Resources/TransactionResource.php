@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Transactions;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
+/**
+ * @mixin Transactions
+ */
 class TransactionResource extends JsonResource
 {
     /**
@@ -19,10 +24,10 @@ class TransactionResource extends JsonResource
             'import_id'        => $this->import_id,
             'transaction_id'   => $this->transaction_id,
             'account_number'   => $this->account_number,
-            'transaction_date' => $this->transaction_date?->toDateString(),
+            'transaction_date' => Carbon::make($this->transaction_date)?->toDateString(),
             'amount'           => $this->amount,
             'currency'         => $this->currency,
-            'created_at'       => $this->created_at?->toDateString(),
+            'created_at'       => Carbon::make($this->created_at)?->toDateString(),
         ];
     }
 }

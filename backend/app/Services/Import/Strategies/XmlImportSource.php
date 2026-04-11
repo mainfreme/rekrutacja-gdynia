@@ -55,7 +55,6 @@ final class XmlImportSource implements ImportSourceInterface
                 }
 
                 $asJson = json_encode($sx, JSON_THROW_ON_ERROR);
-                /** @var array<string, mixed> $row */
                 $row = json_decode($asJson, true, 512, JSON_THROW_ON_ERROR);
 
                 if (! is_array($row)) {

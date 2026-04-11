@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::create('import_logs', function (Blueprint $table) {
-            $table->id()->autoIncrement()->primaryKey();
+            $table->id();
             $table->foreignId('import_id')->constrained()->cascadeOnDelete();
             $table->string('transaction_id');
             $table->text('error_message')->nullable();

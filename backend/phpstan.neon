@@ -3,6 +3,11 @@ includes:
 
 parameters:
     level: 7
+    ignoreErrors:
+        # array_combine() can return false on duplicate keys; PHPStan narrows return type to array-only.
+        -
+            identifier: identical.alwaysFalse
+            path: app/Services/Import/Strategies/CsvImportSource.php
     paths:
         - app
         - config

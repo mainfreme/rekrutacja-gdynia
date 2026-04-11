@@ -11,6 +11,9 @@ class ImportFileRequest extends ApiFormRequest
         return true;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [

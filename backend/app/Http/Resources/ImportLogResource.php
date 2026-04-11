@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\ImportLogs;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
+/**
+ * @mixin ImportLogs
+ */
 class ImportLogResource extends JsonResource
 {
     /**
@@ -19,7 +24,7 @@ class ImportLogResource extends JsonResource
             'import_id'       => $this->import_id,
             'transaction_id'  => $this->transaction_id,
             'error_message'   => $this->error_message,
-            'created_at'      => $this->created_at?->toIso8601String(),
+            'created_at'      => Carbon::make($this->created_at)?->toIso8601String(),
         ];
     }
 }

@@ -41,7 +41,10 @@ class ProcessImportJob implements ShouldQueue
         $extension = strtolower((string) pathinfo($fullPath, PATHINFO_EXTENSION));
 
         try {
-            $source = $importFileStrategy->resolve($extension, $fullPath);
+            $source = $importFileStrategy->resolve(
+                self::assertSupportedImportExtension($extension),
+                $fullPath
+            );
         } catch (Throwable $e) {
             $import->update(['status' => 'failed']);
             Storage::delete($this->filePath);
@@ -114,5 +117,18 @@ class ProcessImportJob implements ShouldQueue
                 Storage::delete($filePath);
             })
             ->dispatch();
+    }
+
+    /**
+     * @return 'csv'|'json'|'xml'
+     */
+    private static function assertSupportedImportExtension(string $extension): string
+    {
+        return match ($extension) {
+            'csv', 'json', 'xml' => $extension,
+            default => throw new \InvalidArgumentException(
+                sprintf('Unsupported import file extension: %s', $extension)
+            ),
+        };
     }
 }
