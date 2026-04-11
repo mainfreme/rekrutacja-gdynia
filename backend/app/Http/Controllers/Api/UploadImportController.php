@@ -20,6 +20,12 @@ class UploadImportController extends ApiController
 
         try {
             $path = $file->store('imports');
+            if ($path === false) {
+                return $this->errorResponse(
+                    'Could not store the uploaded file.',
+                    Response::HTTP_INTERNAL_SERVER_ERROR,
+                );
+            }
 
             $import = Import::create([
                 'file_name' => $file->getClientOriginalName(),
@@ -33,7 +39,7 @@ class UploadImportController extends ApiController
                 'message' => 'Import uploaded successfully',
                 'import' => ImportResource::make($import),
             ], '', Response::HTTP_ACCEPTED);
-            
+
         } catch (Throwable $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }

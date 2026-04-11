@@ -8,9 +8,6 @@ use App\Services\Import\ImportSourceInterface;
 
 final class ImportSourceFactory
 {
-    /**
-     * @param  'csv'|'json'|'xml'  $type
-     */
     public function make(string $type, string $absolutePath): ImportSourceInterface
     {
         return match ($type) {

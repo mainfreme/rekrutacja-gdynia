@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use DateTimeImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
@@ -68,10 +69,13 @@ final class GenerateImportJsonFileCommand extends Command
 
     private function randomDate(): string
     {
-        $start = strtotime('2025-01-01');
-        $end = strtotime('2025-12-31');
+        $startTs = (new DateTimeImmutable('2025-01-01'))->getTimestamp();
+        $endTs = (new DateTimeImmutable('2025-12-31'))->getTimestamp();
+        if ($startTs >= $endTs) {
+            throw new RuntimeException('Nieprawidłowy zakres dat dla generatora.');
+        }
 
-        return date('Y-m-d', random_int($start, $end));
+        return date('Y-m-d', random_int($startTs, $endTs));
     }
 
     /**

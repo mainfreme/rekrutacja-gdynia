@@ -8,6 +8,7 @@ use InvalidArgumentException;
 
 final class Amount
 {
+    /** @var numeric-string */
     private string $value;
 
     public function __construct(string $value)
@@ -22,6 +23,9 @@ final class Amount
         return $this->value;
     }
 
+    /**
+     * @phpstan-assert numeric-string $value
+     */
     private function assertValid(string $value): void
     {
         if (!is_numeric($value)) {

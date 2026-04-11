@@ -10,6 +10,7 @@ use App\Http\Resources\ImportLogResource;
 use App\Http\Resources\TransactionResource;
 use App\Models\Import;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 final class ImportListService
@@ -88,7 +89,9 @@ final class ImportListService
     }
 
     /**
-     * @param  LengthAwarePaginator<\Illuminate\Database\Eloquent\Model>  $paginator
+     * @template TModel of Model
+     *
+     * @param  LengthAwarePaginator<int, TModel>  $paginator
      * @return array<string, int|null>
      */
     private function paginationMeta(LengthAwarePaginator $paginator): array

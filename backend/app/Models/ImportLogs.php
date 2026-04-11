@@ -27,6 +27,9 @@ final class ImportLogs extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Import, $this>
+     */
     public function import(): BelongsTo
     {
         return $this->belongsTo(Import::class);

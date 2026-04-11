@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->id()->autoIncrement()->primaryKey();
+            $table->id();
             $table->string('transaction_id');
             $table->string('account_number');
             $table->date('transaction_date');

@@ -38,8 +38,8 @@ class LogImportErrorsJob implements ShouldQueue
         }
 
         foreach ($this->records as $record) {
-            $line = (int) ($record['line'] ?? 0);
-            $errors = $record['errors'] ?? [];
+            $line = $record['line'];
+            $errors = $record['errors'];
 
             ImportLogs::query()->create([
                 'import_id' => $this->importId,

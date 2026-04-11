@@ -43,6 +43,8 @@ final class TransactionRowParserTest extends TestCase
 
     /**
      * Alias kolumn zgodnie z kolejnością w parserze (id zamiast transaction_id).
+     *
+     * @param  array<string, mixed>  $row
      */
     #[DataProvider('aliasColumnSets')]
     public function test_parse_resolves_alternative_column_names(array $row): void
@@ -181,6 +183,9 @@ final class TransactionRowParserTest extends TestCase
         $this->assertSame('00:00:00', $dto->transactionDate->format('H:i:s'));
     }
 
+    /**
+     * @param  array<string, mixed>  $row
+     */
     #[DataProvider('missingTransactionIdCases')]
     public function test_parse_throws_when_transaction_identifier_missing(array $row): void
     {
@@ -216,6 +221,9 @@ final class TransactionRowParserTest extends TestCase
         ]];
     }
 
+    /**
+     * @param  array<string, mixed>  $row
+     */
     #[DataProvider('missingDateCases')]
     public function test_parse_throws_when_transaction_date_missing(array $row): void
     {
